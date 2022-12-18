@@ -2,14 +2,14 @@ import argparse
 def args_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-dataset', type=str, default='ucm',
+    parser.add_argument('-dataset', type=str, default='rsicd',
                             choices=['sydney', 'ucm', 'rsicd'])    
     parser.add_argument('-img_arch', type=str, default='googlenet',
                             choices=['bninception', 'inceptionresnetv2', 'inceptionv3', 
                                     'inceptionv4', 'alexnet', 'resnet18', 'resnet34', 
                                     'resnet50', 'resnet101', 'resnet152', 'vgg16', 
                                     'googlenet'])
-    parser.add_argument('-sen_arch', type=str, default='global_A',
+    parser.add_argument('-sen_arch', type=str, default='global_local',
                             choices=['global_A', 'global_B', 'local', 'global_local'])
 
     parser.add_argument('--model_path', type=str, 
@@ -28,7 +28,7 @@ def args_parser():
                             default='./data/dataset/annotations/val_dataset.json',
                             help='path for train annotation json file')
     parser.add_argument('--is_visualize', type=bool, default=False,
-                            help='if to visualize the attention map')
+                            help='whether to visualize attention map')
 
     parser.add_argument('--max_seq_length', type=int , default=25,
                             help='max length of sequence')

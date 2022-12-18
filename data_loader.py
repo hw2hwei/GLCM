@@ -2,17 +2,17 @@ import torch
 import torchvision.transforms as transforms
 import torch.utils.data as data
 import os
-import pickle
 import numpy as np
 import nltk
 from PIL import Image
 from build_vocab import Vocabulary
-from pycocotools.coco import COCO
 import random
+import json
 
-class CocoDataset(data.Dataset):
+
+class CaptDataset(data.Dataset):
     """COCO Custom Dataset compatible with torch.utils.data.DataLoader."""
-    def __init__(self, root, json, vocab, vocab_size, max_seq_length, transform=None):
+    def __init__(self, root, json_path, vocab, vocab_size, max_seq_length, transform=None):
         """Set the path for images, captions and vocabulary wrapper.
         
         Args:
@@ -22,35 +22,48 @@ class CocoDataset(data.Dataset):
             transform: image transformer.
         """
         self.root = root
-        self.coco = COCO(json)
-        self.ids = list(self.coco.anns.keys())
-        self.vocab = vocab
+        self.files = self.load_files(json_path)
+        self.vocab = vocab.word2idx
         self.vocab_size = vocab_size
         self.max_seq_length = max_seq_length
         self.transform = transform
-        # for cap_id, value in self.coco.anns.items():
-        #     img_id = value['image_id']
-        #     print (cap_id, img_id, cap_id-img_id*5, value)
+
+    def load_files(self, json_path):
+        files = []
+        files_name = {}
+        raw_data = json.load(open(json_path, "r"))
+
+        names = raw_data['images']
+        anns  = raw_data['annotations'] 
+
+        for name in names: 
+            files_name[name['id']] = name['file_name']
+
+        for ann in anns:
+            files.append({'path':files_name[ann['image_id']], 'caption':ann['caption']})
+
+        return files
 
     def __getitem__(self, index):
         """Returns one data pair (image and caption)."""
-        coco = self.coco
-        vocab = self.vocab
-        ann_id = self.ids[index]
-        img_id = coco.anns[ann_id]['image_id']
-        path = coco.loadImgs(img_id)[0]['file_name']
+        file  = self.files[index]
+        path, caption = file['path'], file['caption']
         image = Image.open(os.path.join(self.root, path)).convert('RGB')
         if self.transform is not None:
             image = self.transform(image)
 
-        caption = coco.anns[ann_id]['caption']
         tokens = nltk.tokenize.word_tokenize(str(caption).lower())
+
         caption = []
-        caption.append(vocab('<start>'))
-        caption.extend([vocab(token) for token in tokens])
-        caption.append(vocab('<end>'))
+        caption.append(self.vocab['<start>'])
+        for token in tokens:
+            if token in self.vocab:
+                caption.append(self.vocab[token]) 
+            else: 
+                caption.append(self.vocab['<unk>'])        
+        caption.append(self.vocab['<end>'])
         while len(caption) < self.max_seq_length:
-            caption.append(vocab('<pad>'))
+            caption.append(self.vocab['<end>'])
         if len(caption) > self.max_seq_length:
             caption = caption[:self.max_seq_length]
         caption = torch.Tensor(caption)
@@ -58,7 +71,7 @@ class CocoDataset(data.Dataset):
         return image, caption
 
     def __len__(self):
-        return len(self.ids)
+        return len(self.files)
 
 
 def collate_fn(data):
@@ -84,9 +97,6 @@ def collate_fn(data):
     images = torch.stack(images, 0)
     captions = torch.stack(captions, 0).long()
 
-    # Merge captions (from tuple of 1D tensor to 2D tensor).
-
-    # return images, classes, targets_A, captions_B, captions_C, captions_D, captions_E
     return images, captions
 
 
@@ -100,8 +110,8 @@ def build_datasets(args, vocab):
                              (0.229, 0.224, 0.225))])
     
     # Build data loader
-    train_dataset = CocoDataset(root=args.train_dir.replace('dataset', args.dataset),
-                                json=args.train_caption_path.replace('dataset', args.dataset),
+    train_dataset = CaptDataset(root=args.train_dir.replace('dataset', args.dataset),
+                                json_path=args.train_caption_path.replace('dataset', args.dataset),
                                 vocab=vocab,
                                 vocab_size=len(vocab),
                                 max_seq_length=args.max_seq_length,

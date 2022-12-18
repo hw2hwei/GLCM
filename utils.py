@@ -80,8 +80,10 @@ def batch_ids2words(batch_ids, vocab):
         for j in range(len(ids)):
             id = ids[j]
             word = vocab.idx2word[id]
-            # if word == '.':
-            #     print ('.: ', id)
+            if word == '.':
+                sampled_caption.append(word)
+                break            
+                # print ('.: ', id)
             if word == '<end>':
                 break
             if '<start>' not in word:
@@ -97,4 +99,3 @@ def batch_ids2words(batch_ids, vocab):
         batch_words.append(sentence)
 
     return batch_words
-
