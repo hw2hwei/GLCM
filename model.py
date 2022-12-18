@@ -84,33 +84,12 @@ class Decoder(nn.Module):
         # print (trg_mask)
         capts_embed = self.embedding(capts)
 
-        if self.sen_arch == 'global_A':
-            capts_embed = capts_embed + self.dropout1(feats_global.expand_as(capts_embed))
-            capts_embed = capts_embed + self.fusion1(capts_embed, capts_embed, capts_embed, trg_mask)
-            capts_embed = self.norm_a(capts_embed)
-
-        if self.sen_arch == 'global_B':
-            capts_embed = capts_embed + self.dropout1(feats_global.expand_as(capts_embed))
-
-            capts_embed = capts_embed + self.fusion1(capts_embed, capts_embed, capts_embed, trg_mask)
-            capts_embed = self.norm_a(capts_embed)
-            capts_embed = capts_embed + self.fusion2(capts_embed, capts_embed, capts_embed, trg_mask)
-            capts_embed = self.norm_b(capts_embed)
-
-        elif self.sen_arch == 'local':
-            capts_embed = capts_embed + self.fusion1(capts_embed, capts_embed, capts_embed, trg_mask)
-            capts_embed = self.norm_a(capts_embed)
-            capts_embed = capts_embed + self.fusion2(capts_embed, feats_local, feats_local)
-            capts_embed = self.norm_b(capts_embed)
-
-        elif self.sen_arch == 'global_local':
-            capts_embed = capts_embed + self.dropout1(feats_global.expand_as(capts_embed))
-            capts_embed = capts_embed + self.fusion1(capts_embed, capts_embed, capts_embed, trg_mask)
-            capts_embed = self.norm_a(capts_embed)
-            capts_embed = capts_embed + self.fusion2(capts_embed, feats_local, feats_local)
-            capts_embed = self.norm_b(capts_embed)
+        capts_embed = capts_embed + self.dropout1(feats_global.expand_as(capts_embed))
+        capts_embed = capts_embed + self.fusion1(capts_embed, capts_embed, capts_embed, trg_mask)
+        capts_embed = self.norm_a(capts_embed)
+        capts_embed = capts_embed + self.fusion2(capts_embed, feats_local, feats_local)
+        capts_embed = self.norm_b(capts_embed)
             
-
         capts_embed = capts_embed + self.dropout2(self.linear(capts_embed))
         capts_embed = self.norm_c(capts_embed)
 
@@ -125,31 +104,12 @@ class Decoder(nn.Module):
 
         for i in range(self.max_seq_length-1):
             seq_embed = self.embedding(seq)
-
-            if self.sen_arch == 'global_A':
-                seq_embed = seq_embed + feat_global.expand_as(seq_embed)
-                seq_embed = seq_embed + self.fusion1.sample(seq_embed, seq_embed, seq_embed)
-                seq_embed = self.norm_a(seq_embed)
-
-            if self.sen_arch == 'global_B':
-                seq_embed = seq_embed + feat_global.expand_as(seq_embed)
-                seq_embed = seq_embed + self.fusion1.sample(seq_embed, seq_embed, seq_embed)
-                seq_embed = self.norm_a(seq_embed)
-                seq_embed = seq_embed + self.fusion2.sample(seq_embed, seq_embed, seq_embed)
-                seq_embed = self.norm_b(seq_embed)
-
-            elif self.sen_arch == 'local':
-                seq_embed = seq_embed + self.fusion1.sample(seq_embed, seq_embed, seq_embed)
-                seq_embed = self.norm_a(seq_embed)
-                seq_embed = seq_embed + self.fusion2.sample(seq_embed, feat_local, feat_local)
-                seq_embed = self.norm_b(seq_embed)
-
-            elif self.sen_arch == 'global_local':
-                seq_embed = seq_embed + feat_global.expand_as(seq_embed)
-                seq_embed = seq_embed + self.fusion1.sample(seq_embed, seq_embed, seq_embed)
-                seq_embed = self.norm_a(seq_embed)
-                seq_embed = seq_embed + self.fusion2.sample(seq_embed, feat_local, feat_local)
-                seq_embed = self.norm_b(seq_embed)
+            
+            seq_embed = seq_embed + feat_global.expand_as(seq_embed)
+            seq_embed = seq_embed + self.fusion1.sample(seq_embed, seq_embed, seq_embed)
+            seq_embed = self.norm_a(seq_embed)
+            seq_embed = seq_embed + self.fusion2.sample(seq_embed, feat_local, feat_local)
+            seq_embed = self.norm_b(seq_embed)
 
             seq_embed = seq_embed + self.linear(seq_embed)
             seq_embed = self.norm_c(seq_embed)
