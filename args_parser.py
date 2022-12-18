@@ -9,9 +9,7 @@ def args_parser():
                                     'inceptionv4', 'alexnet', 'resnet18', 'resnet34', 
                                     'resnet50', 'resnet101', 'resnet152', 'vgg16', 
                                     'googlenet'])
-    parser.add_argument('-sen_arch', type=str, default='global_local',
-                            choices=['global_A', 'global_B', 'local', 'global_local'])
-
+    parser.add_argument('-sen_arch', type=str, default='global_local')
     parser.add_argument('--model_path', type=str, 
                             default='./checkpoints/dataset_img_arch_sen_arch.pkl',
                             help='path for trained encoder')
